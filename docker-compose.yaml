@@ -8,13 +8,13 @@ services:
       - "80:4180"    # 外部からアクセス可能なのはこのポートのみ
       # - "443:4443"   # HTTPS用（オプション）
     environment:
-      TZ: "Asia/Tokyo"  # タイムゾーン設定
+      TZ: "Asia/Tokyo"
       # 基本設定
       OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
       # - OAUTH2_PROXY_HTTPS_ADDRESS=0.0.0.0:4443
       
       # アップストリーム設定（Next.jsアプリへの転送）
-      OAUTH2_PROXY_UPSTREAMS: http://nextjs-app:3000
+      OAUTH2_PROXY_UPSTREAMS: http://web-app:5173
 
       # プロバイダー設定
       OAUTH2_PROXY_PROVIDER: github
@@ -38,17 +38,17 @@ services:
     networks:
       - app-network 
 
-  nextjs-app:
+  web-app:
     build: 
       context: .
       dockerfile: Dockerfile
-    container_name: nextjs-app
+    container_name: web-app
     # ポートを外部に公開しない（内部ネットワークのみ）
     expose:
-      - "3000"
+      - "5173"
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=5173
     networks:
       - app-network
     restart: unless-stopped
