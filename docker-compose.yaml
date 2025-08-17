@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    container_name: oauth2-proxy
+    ports:
+      - "80:4180"    # 外部からアクセス可能なのはこのポートのみ
+      # - "443:4443"   # HTTPS用（オプション）
+    environment:
+      TZ: "Asia/Tokyo"  # タイムゾーン設定
+      # 基本設定
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      # - OAUTH2_PROXY_HTTPS_ADDRESS=0.0.0.0:4443
+      
+      # アップストリーム設定（Next.jsアプリへの転送）
+      OAUTH2_PROXY_UPSTREAMS: http://nextjs-app:3000
+
+      # プロバイダー設定
+      OAUTH2_PROXY_PROVIDER: github
+      OAUTH2_PROXY_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      OAUTH2_PROXY_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      OAUTH2_PROXY_CODE_CHALLENGE_METHOD: S256
+
+      # プロキシ設定
+      OAUTH2_PROXY_EMAIL_DOMAINS: "*"
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: true
+      OAUTH2_PROXY_PROXY_PREFIX: /sso
+      OAUTH2_PROXY_REDIRECT_URL: http://localhost/sso/callback
+      OAUTH2_PROXY_WHITELIST_DOMAINS: localhost
+
+      # cookie設定
+      OAUTH2_PROXY_SESSION_STORE_TYPE: cookie
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET}
+      OAUTH2_PROXY_COOKIE_EXPIRE: 24h
+      OAUTH2_PROXY_COOKIE_REFRESH: 15m
+
+    networks:
+      - app-network 
+
+  nextjs-app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: nextjs-app
+    # ポートを外部に公開しない（内部ネットワークのみ）
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+    internal: false
