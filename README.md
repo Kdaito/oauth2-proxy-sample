@@ -1,87 +1,61 @@
-# Welcome to React Router!
+# OAuth2 Proxy Sample
 
-A modern, production-ready template for building full-stack React applications using React Router.
+oauth2-proxyを使用してSSOを実装したWebアプリケーションのサンプルです。認証が完了したユーザーのみがアプリケーションにアクセスできます。
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+## 概要
 
-## Features
+このプロジェクトは以下の技術で構成されています：
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+- **oauth2-proxy**: SSO認証を搭載したリバースプロキシ
+- **React Router v7**: Webアプリケーション
+- **Docker Compose**: 開発環境とデプロイメント
 
-## Getting Started
+## アーキテクチャ
 
-### Installation
+```
+ユーザー → oauth2-proxy → React Routerアプリ (内部ネットワーク)
+```
 
-Install the dependencies:
+- oauth2-proxyがリバースプロキシとして機能
+- 認証されていないユーザーはIdpのグインページにリダイレクト
+- 認証後、内部のWebアプリにプロキシ
+
+## セットアップ
+
+### 1. GitHub OAuth Appの設定
+このリポジトリでは、githubのOAuth Appsを使用してSSOを実装しています。
+
+1. [GitHub Developer Settings](https://github.com/settings/developers)でOAuth Appを作成
+2. Authorization callback URLを `http://localhost/sso/callback` に設定
+3. Client IDとClient Secretを取得
+
+### 2. 環境変数の設定
+
+`.env.example`をコピーして`.env`を作成し、以下の値を設定：
 
 ```bash
-npm install
+cp .env.example .env
 ```
 
-### Development
+```env
+GITHUB_CLIENT_ID="your_github_client_id"
+GITHUB_CLIENT_SECRET="your_github_client_secret"
+OAUTH2_PROXY_COOKIE_SECRET="your_32_char_secret_key"
+```
 
-Start the development server with HMR:
+Cookie Secretは以下のコマンドで生成可能：
 
 ```bash
-npm run dev
+openssl rand -base64 32 | tr -- '+/' '-_'
 ```
 
-Your application will be available at `http://localhost:5173`.
-
-## Building for Production
-
-Create a production build:
+### 3. アプリケーションの起動
 
 ```bash
-npm run build
+docker-compose up -d
 ```
 
-## Deployment
+### 4. アクセス
 
-### Docker Deployment
-
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.
+- ブラウザで `http://localhost` にアクセスすると、GitHub認証が要求されます。
+- `http://localhost:5187`で直接webアプリケーションに接続できないことが確認できます。
